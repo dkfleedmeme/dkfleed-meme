@@ -10,6 +10,7 @@ import vm from "node:vm";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = join(ROOT, "site");
 const OFFICIAL_GITHUB = "https://github.com/dkfleedmeme/dkfleed-meme";
+const SITE_URL = "https://dkfleed.meme";
 const MAX_ASSET_BYTES = 300 * 1024;
 
 let errors = 0;
@@ -35,7 +36,7 @@ const repoTextFiles = walk(ROOT).filter((p) => TEXT_EXT.has(extname(p)) || p.end
 console.log("Required files");
 for (const f of ["index.html", "404.html", "robots.txt", "sitemap.xml", "site.webmanifest", "favicon.ico",
   "favicon-32.png", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "og-image.jpg",
-  "assets/css/styles.css", "assets/js/config.js", "assets/js/i18n.js", "assets/js/main.js"]) {
+  "assets/css/styles.css", "assets/js/config.js", "assets/js/main.js"]) {
   existsSync(join(SITE, f)) ? ok(f) : fail("missing site/" + f);
 }
 if (siteFiles.some((p) => /website-reference/i.test(p))) fail("website-reference.png must not be published");
@@ -44,8 +45,9 @@ else ok("reference image not published");
 // 2. Local references --------------------------------------------------------
 console.log("Local references");
 function resolveRef(fromFile, ref) {
+  if (ref.startsWith(SITE_URL + "/")) ref = ref.slice(SITE_URL.length);
   if (/^(https?:|mailto:|data:|#|javascript:)/i.test(ref)) return null;
-  if (ref.startsWith("__SITE_URL__")) return join(SITE, ref.replace("__SITE_URL__", "").replace(/^\//, "") || "index.html");
+  if (ref.startsWith("/")) return join(SITE, ref.split(/[?#]/)[0].slice(1) || "index.html");
   return join(dirname(fromFile), ref.split(/[?#]/)[0]);
 }
 for (const file of siteFiles.filter((p) => /\.(html|css|webmanifest)$/.test(p))) {
@@ -102,26 +104,49 @@ for (const file of siteFiles.filter((p) => p.endsWith(".js"))) {
   catch (e) { fail(relative(ROOT, file) + " syntax error\n" + e.stderr); }
 }
 
-// 5. i18n + config ------------------------------------------------------------
-console.log("Translations & config");
+// 5. English only, metadata and config ---------------------------------------
+console.log("English only & metadata");
+if (existsSync(join(SITE, "assets/js/i18n.js"))) fail("translation file assets/js/i18n.js must not exist"); else ok("no translation file");
+const htmlFiles = siteFiles.filter((p) => p.endsWith(".html"));
+for (const file of htmlFiles) {
+  const html = read(file);
+  const name = relative(ROOT, file);
+  if (!html.includes('<html lang="en">')) fail(name + ': document language must be "en"');
+  if (/\slang="(?!en")[a-z-]+"/i.test(html)) fail(name + ": contains a non-English lang attribute");
+  if (/data-i18n|data-lang|class="lang|lang-btn|hreflang|og:locale:alternate/i.test(html)) fail(name + ": language selector or i18n markup found");
+  else ok(name + ": no language selector, English only");
+}
+if (/DKF_I18N|data-i18n|localStorage|navigator\.language|[?&]lang=|applyLang|detectLang/.test(mainJs)) fail("main.js still contains language-switch logic");
+else ok("main.js has no language logic");
+// Distinctly Italian words/phrases that must never appear in the public site.
+const ITALIAN = /\b(della|delle|degli|nella|nelle|questa|questo|anche|perch[eé]|sicurezza|storia|lingua|prevendita|avvertenze|errore|unisciti|torna|in arrivo|prima la|poi il|canali|equipaggio|rischio|nessuna|nessun|progetto|rete|lancio|stato)\b|it_IT|[àèìòù]/i;
+let italianHits = 0;
+for (const file of siteFiles.filter((p) => /\.(html|js|css|xml|txt|webmanifest)$/.test(p))) {
+  const m = read(file).match(ITALIAN);
+  if (m) { italianHits++; fail(`${relative(ROOT, file)}: Italian text found ("${m[0]}")`); }
+}
+if (!italianHits) ok("no Italian text in public files");
+const canonical = (index.match(/<link rel="canonical" href="([^"]+)"/) || [])[1];
+canonical === SITE_URL + "/" ? ok("canonical " + canonical) : fail("canonical must be " + SITE_URL + "/ (found " + canonical + ")");
+for (const prop of ["og:url", "og:image", "twitter:image"]) {
+  const v = (index.match(new RegExp(`(?:property|name)="${prop}" content="([^"]+)"`)) || [])[1] || "";
+  v.startsWith(SITE_URL + "/") ? ok(`${prop} ${v}`) : fail(`${prop} must start with ${SITE_URL}/ (found "${v}")`);
+}
+read(join(SITE, "sitemap.xml")).includes(`<loc>${SITE_URL}/</loc>`) ? ok("sitemap uses " + SITE_URL) : fail("sitemap must list " + SITE_URL + "/");
+read(join(SITE, "robots.txt")).includes(`Sitemap: ${SITE_URL}/sitemap.xml`) ? ok("robots.txt sitemap URL") : fail("robots.txt must reference " + SITE_URL + "/sitemap.xml");
+if (siteFiles.filter((p) => TEXT_EXT.has(extname(p))).some((p) => read(p).includes("__SITE_URL__"))) fail("leftover __SITE_URL__ placeholder");
+else ok("no URL placeholders left");
+if (!/Token Coming Soon/.test(index) || /\b(token is (now )?live|buy now|now live)\b/i.test(index)) fail('must show "Token Coming Soon" and must not claim the token is live');
+else ok('"Token Coming Soon" shown, no live-token claims');
+if (!/not affiliated with, sponsored by or endorsed by any existing animation series, studio, publisher, creator/.test(index)) fail("independence disclaimer missing");
+else ok("independence disclaimer present");
+const NAV = ["Home", "Story", "Community", "Tokenomics", "Roadmap", "Safety", "Socials"];
+const navHtml = (index.match(/<nav class="nav"[\s\S]*?<\/nav>/) || [""])[0];
+NAV.every((t) => navHtml.includes(`>${t}</a>`)) ? ok("navigation labels in English") : fail("navigation labels must be: " + NAV.join(", "));
+
 const sandbox = { window: {} };
 vm.createContext(sandbox);
-vm.runInContext(read(join(SITE, "assets/js/i18n.js")), sandbox);
 vm.runInContext(read(join(SITE, "assets/js/config.js")), sandbox);
-const { en = {}, it = {} } = sandbox.window.DKF_I18N || {};
-const enKeys = Object.keys(en), itKeys = Object.keys(it);
-const onlyEn = enKeys.filter((k) => !(k in it)), onlyIt = itKeys.filter((k) => !(k in en));
-onlyEn.length || onlyIt.length ? fail(`EN/IT key mismatch: ${[...onlyEn, ...onlyIt].join(", ")}`) : ok(`${enKeys.length} keys in EN and IT`);
-const usedKeys = new Set([
-  ...[...index.matchAll(/data-i18n="([^"]+)"/g)].map((m) => m[1]),
-  ...[...index.matchAll(/data-i18n-attr="([^"]+)"/g)].flatMap((m) => m[1].split(";").map((p) => p.split(":")[1])),
-  ...[...mainJs.matchAll(/"((?:socials|nav|hero|footer)\.[A-Za-z]+)"/g)].map((m) => m[1])
-]);
-const undefinedKeys = [...usedKeys].filter((k) => !(k in en));
-undefinedKeys.length ? fail("keys used but not translated: " + undefinedKeys.join(", ")) : ok(`${usedKeys.size} used keys translated`);
-const empty = [...enKeys.filter((k) => !en[k].trim()), ...itKeys.filter((k) => !it[k].trim())];
-empty.length ? fail("empty translations: " + empty.join(", ")) : ok("no empty translations");
-
 const links = (sandbox.window.DKF_CONFIG || {}).links || {};
 links.github === OFFICIAL_GITHUB ? ok("GitHub link is the official repository") : fail("GitHub link must be " + OFFICIAL_GITHUB);
 for (const k of ["x", "telegram", "instagram", "tiktok", "pumpfun"]) {

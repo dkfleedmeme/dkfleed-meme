@@ -1,8 +1,8 @@
 # D.K. FLEED ($DKF) — Official Website
 
-> **THE MEME FROM DEEP SPACE** · *Community first. Token next.*
+> **THE MEME FROM DEEP SPACE** · *The retro robot spirit returns from deep space.*
 
-Official static website of **D.K. FLEED**, a community-first meme token planned on **Solana**.
+Official static website of **D.K. FLEED**, an original, community-driven meme token planned on **Solana** — a tribute to the imagination and atmosphere of classic 1970s and 1980s robot animation, reborn as a meme for a new digital generation.
 
 | | |
 |---|---|
@@ -13,8 +13,7 @@ Official static website of **D.K. FLEED**, a community-first meme token planned 
 | **Planned launch** | Pump.fun fair launch |
 | **Presale** | None |
 | **Status** | Community Building · Token Coming Soon |
-| **Domain** | dkfleed.meme (see [DNS-SETUP.md](DNS-SETUP.md)) |
-| **Live (GitHub Pages)** | https://dkfleedmeme.github.io/dkfleed-meme/ |
+| **Website** | https://dkfleed.meme |
 
 The token **has not been created yet**. There is no contract address, no price and no launch date.
 Any contract address that is not published on the official website is not ours.
@@ -23,20 +22,20 @@ Any contract address that is not published on the official website is not ours.
 
 ## Features
 
-- Pure static site: semantic HTML5, modern CSS and a small vanilla JS file. No framework, no build step, no backend, no database, no third-party requests.
-- Space theme: animated parallax starfield (canvas), nebula glows, drifting particles, original SVG spaceships crossing the sky, and the official token rotating in full, slow 3D.
-- Full **EN / IT** language switch (detects the browser language, remembers the choice, `?lang=it` / `?lang=en` also work).
+- Pure static site: semantic HTML5, modern CSS and a small vanilla JS file. No framework, no build step, no backend, no database, no tracking, no third-party requests.
+- Retro space theme: animated parallax starfield (canvas), nebula glows, drifting particles, original SVG spaceships crossing the sky, and the official token rotating in full, slow 3D.
+- English-only content, written directly in `index.html` (works without JavaScript and is fully indexable).
 - Responsive from 320px phones to wide desktops; respects `prefers-reduced-motion` (animations off, static coin).
-- Accessibility: skip link, landmarks, keyboard navigation, visible focus, `aria-*` attributes on the menu and language switch.
+- Accessibility: skip link, landmarks, keyboard navigation, visible focus, `aria-*` attributes on the mobile menu.
 - Security: strict Content-Security-Policy (no inline scripts, no external origins), **no wallet connect, no blockchain calls, no transactions, no network requests**.
-- SEO & social: title/description, canonical URL, Open Graph + Twitter card image, `robots.txt`, `sitemap.xml`, web manifest, favicons, custom 404 page.
+- SEO & social: title/description, canonical URL `https://dkfleed.meme/`, Open Graph + Twitter card image, `robots.txt`, `sitemap.xml`, web manifest, favicons, custom 404 page.
 
 ## Project structure
 
 ```
 .
-├── site/                      ← published website (deployed by GitHub Actions)
-│   ├── index.html
+├── site/                      ← published website (deployed as-is by GitHub Actions)
+│   ├── index.html             ← all page content
 │   ├── 404.html
 │   ├── robots.txt · sitemap.xml · site.webmanifest
 │   ├── favicon.ico · favicon-32.png · apple-touch-icon.png · icon-*.png
@@ -46,12 +45,10 @@ Any contract address that is not published on the official website is not ours.
 │       ├── img/token-coin-*.webp
 │       └── js/
 │           ├── config.js      ← ALL public links live here
-│           ├── i18n.js        ← EN / IT texts
 │           └── main.js
 ├── tools/
 │   ├── check-site.mjs         ← automated checks (run locally and in CI)
-│   ├── build-images.sh        ← regenerates all web images from token.png
-│   └── preview-build.sh       ← local preview build
+│   └── build-images.sh        ← regenerates all web images from token.png
 ├── token.png                  ← original official logo (master file, never modified)
 ├── .github/workflows/pages.yml
 ├── DNS-SETUP.md
@@ -81,25 +78,26 @@ Commit and push to `main`: the site redeploys automatically.
 
 ## Editing texts
 
-All visible texts are in [`site/assets/js/i18n.js`](site/assets/js/i18n.js) (`en` and `it`). The English text is also written in `index.html` so the page works without JavaScript and is indexed correctly. Keep both languages in sync — the checks fail if a key is missing.
+All copy lives in [`site/index.html`](site/index.html). Content rules:
 
-Rules for content: do not add contract addresses, prices, dates, allocations, liquidity, audits, partnerships or any promise of profit unless they are real and verified.
+- English only.
+- Keep the story original: never mention or imitate existing cartoon titles, robot names, characters, studios, franchises, logos, slogans, costumes, weapons or storylines.
+- Do not add contract addresses, prices, dates, allocations, liquidity, audits, partnerships or any promise of profit unless they are real and verified.
+- Do not add personal information about the people behind the project.
 
 ## Local development
 
 No dependencies are required (Node.js ≥ 18 only for the checks).
 
 ```bash
-# 1. Automated checks: files, links, anchors, JS syntax, EN/IT keys, config, secrets, asset weight
+# Automated checks: files, links, anchors, JS syntax, English-only content,
+# canonical/social metadata, config, secrets, protected names, asset weight
 node tools/check-site.mjs
 
-# 2. Preview (replaces the __SITE_URL__ placeholder like the CI does)
-tools/preview-build.sh http://localhost:8765
-python3 -m http.server 8765 --directory _site
+# Preview
+python3 -m http.server 8765 --directory site
 # open http://localhost:8765
 ```
-
-You can also open `site/index.html` directly in a browser; only absolute social metadata uses the placeholder.
 
 ### Regenerating images
 
@@ -109,19 +107,18 @@ tools/build-images.sh   # requires ImageMagick; reads token.png, writes site/ im
 
 ## Deployment
 
-Deployment is automatic through **GitHub Actions → GitHub Pages** ([`.github/workflows/pages.yml`](.github/workflows/pages.yml)) on every push to `main`:
+Every push to `main` runs [`.github/workflows/pages.yml`](.github/workflows/pages.yml):
 
-1. runs `tools/check-site.mjs` (the deploy stops if any check fails);
-2. copies `site/` and replaces `__SITE_URL__` with the repository variable `SITE_URL` (default: `https://dkfleedmeme.github.io/dkfleed-meme`);
-3. publishes to GitHub Pages.
+1. `tools/check-site.mjs` — the deploy stops if any check fails;
+2. the `site/` folder is published to GitHub Pages, served at **https://dkfleed.meme** (custom domain, HTTPS enforced).
 
-When the custom domain is ready, follow [DNS-SETUP.md](DNS-SETUP.md).
+DNS details: [DNS-SETUP.md](DNS-SETUP.md).
 
 ## Disclaimer
 
 D.K. FLEED ($DKF) is an experimental meme token with no intrinsic value and no expectation of financial return. It is not an investment, a security or financial advice. Crypto assets are highly volatile and high risk: you may lose all the money you use. Nothing in this repository or on the website is a promise of profit, return or future value.
 
-D.K. FLEED is an original, independent project. It is not affiliated with, endorsed by or sponsored by any existing franchise, studio, producer or trademark owner.
+D.K. FLEED is an independent and original community project. It is not affiliated with, sponsored by or endorsed by any existing animation series, studio, publisher, creator, franchise or rights holder.
 
 ## Safety
 

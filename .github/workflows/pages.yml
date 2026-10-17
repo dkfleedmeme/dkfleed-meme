@@ -29,26 +29,13 @@ jobs:
       - name: Run site checks
         run: node tools/check-site.mjs
 
-      - name: Build static site
-        env:
-          # Set the repository variable SITE_URL (e.g. https://dkfleed.meme) once the
-          # custom domain is live. Until then the GitHub Pages URL is used.
-          SITE_URL: ${{ vars.SITE_URL || 'https://dkfleedmeme.github.io/dkfleed-meme' }}
-        run: |
-          SITE_URL="${SITE_URL%/}"
-          rm -rf _site && mkdir _site
-          cp -R site/. _site/
-          grep -rl '__SITE_URL__' _site | xargs sed -i "s#__SITE_URL__#${SITE_URL}#g"
-          if grep -rq '__SITE_URL__' _site; then echo "Unreplaced placeholder" && exit 1; fi
-          echo "Built for ${SITE_URL}"
-
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: _site
+          path: site
 
   deploy:
     needs: build

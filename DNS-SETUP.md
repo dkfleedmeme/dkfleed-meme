@@ -1,108 +1,67 @@
-# Connecting `dkfleed.meme` to GitHub Pages
+# DNS setup for `dkfleed.meme` (GitHub Pages)
 
-The site is currently published at **https://dkfleedmeme.github.io/dkfleed-meme/**.
-This guide connects the custom domain **dkfleed.meme** without any VPS. Nothing here has been applied yet: the DNS records must be created by the domain owner at the registrar / DNS provider.
+The site is served by GitHub Pages at **https://dkfleed.meme** (custom domain set in the repository Pages settings, HTTPS enforced). No VPS is used.
+Canonical, Open Graph, `robots.txt` and `sitemap.xml` already point to `https://dkfleed.meme`.
 
-> Order matters: **1) DNS records → 2) wait for propagation → 3) set the custom domain on GitHub → 4) enforce HTTPS → 5) set `SITE_URL`.**
+DNS records are managed at the domain registrar / DNS provider — they are never changed from this repository.
 
----
-
-## 0. (Recommended) Verify the domain on GitHub
-
-Protects against domain takeover.
-
-1. GitHub → avatar → **Settings** → **Pages** (account settings of `dkfleedmeme`, not the repository) → **Add a domain** → `dkfleed.meme`.
-2. GitHub shows a **TXT** record like:
-
-   | Type | Name / Host | Value |
-   |---|---|---|
-   | TXT | `_github-pages-challenge-dkfleedmeme` | *(code shown by GitHub)* |
-
-3. Add it at the DNS provider, wait, then click **Verify**.
-
-## 1. DNS records
-
-At the DNS provider of `dkfleed.meme`, **remove any existing A / AAAA / CNAME records for `@` and `www`** (e.g. parking pages), then create:
+## Required records
 
 ### Apex domain `dkfleed.meme`
 
 | Type | Name / Host | Value | TTL |
 |---|---|---|---|
-| A | `@` | `185.199.108.153` | 3600 (or Auto) |
-| A | `@` | `185.199.109.153` | 3600 |
-| A | `@` | `185.199.110.153` | 3600 |
-| A | `@` | `185.199.111.153` | 3600 |
-| AAAA | `@` | `2606:50c0:8000::153` | 3600 |
-| AAAA | `@` | `2606:50c0:8001::153` | 3600 |
-| AAAA | `@` | `2606:50c0:8002::153` | 3600 |
-| AAAA | `@` | `2606:50c0:8003::153` | 3600 |
+| A | `@` | `185.199.108.153` | Auto / 3600 |
+| A | `@` | `185.199.109.153` | Auto / 3600 |
+| A | `@` | `185.199.110.153` | Auto / 3600 |
+| A | `@` | `185.199.111.153` | Auto / 3600 |
+| AAAA *(recommended, IPv6)* | `@` | `2606:50c0:8000::153` | Auto / 3600 |
+| AAAA *(recommended, IPv6)* | `@` | `2606:50c0:8001::153` | Auto / 3600 |
+| AAAA *(recommended, IPv6)* | `@` | `2606:50c0:8002::153` | Auto / 3600 |
+| AAAA *(recommended, IPv6)* | `@` | `2606:50c0:8003::153` | Auto / 3600 |
 
 ### Subdomain `www.dkfleed.meme`
 
 | Type | Name / Host | Value | TTL |
 |---|---|---|---|
-| CNAME | `www` | `dkfleedmeme.github.io` | 3600 |
+| CNAME | `www` | `dkfleedmeme.github.io` | Auto / 3600 |
 
 Notes:
 - The CNAME value is `dkfleedmeme.github.io` — **without** `/dkfleed-meme` and without `https://`.
+- Remove registrar parking records (for example a `www` CNAME to `parkingpage.namecheap.com`) and any URL-redirect records for `@` or `www`.
 - Do **not** use wildcard records (`*.dkfleed.meme`).
-- If the provider uses Cloudflare proxy, set these records to **DNS only** (grey cloud) at least until GitHub issues the HTTPS certificate.
+- If a proxy/CDN is used (e.g. Cloudflare), keep these records **DNS only**.
 
-## 2. Check propagation
+## Recommended: verify the domain on GitHub
+
+Protects against domain takeover. GitHub (account `dkfleedmeme`) → **Settings** → **Pages** → **Add a domain** → `dkfleed.meme`, then add the TXT record GitHub shows:
+
+| Type | Name / Host | Value |
+|---|---|---|
+| TXT | `_github-pages-challenge-dkfleedmeme` | *(code shown by GitHub)* |
+
+## Check
 
 ```bash
-dig +short dkfleed.meme A
-dig +short dkfleed.meme AAAA
-dig +short www.dkfleed.meme CNAME
+dig +short dkfleed.meme A          # four 185.199.10x.153 addresses
+dig +short dkfleed.meme AAAA       # four 2606:50c0:800x::153 addresses (if added)
+dig +short www.dkfleed.meme CNAME  # dkfleedmeme.github.io.
+curl -I https://dkfleed.meme/      # HTTP/2 200
+curl -I https://www.dkfleed.meme/  # redirect to https://dkfleed.meme/
 ```
 
-Expected: the four `185.199.10x.153` addresses, the four `2606:50c0:800x::153` addresses and `dkfleedmeme.github.io.`
-Propagation can take from a few minutes to 24–48 hours.
+## GitHub Pages settings (already applied)
 
-## 3. Set the custom domain on GitHub
+Repository **dkfleedmeme/dkfleed-meme** → **Settings** → **Pages**:
+- Source: **GitHub Actions**
+- Custom domain: `dkfleed.meme`
+- **Enforce HTTPS**: on
 
-Repository **dkfleedmeme/dkfleed-meme** → **Settings** → **Pages** → **Custom domain** → `dkfleed.meme` → **Save**.
+With Actions-based deployment no `CNAME` file is needed in the repository.
 
-Because the site is deployed with GitHub Actions, **no `CNAME` file is needed** in the repository — the setting above is enough. GitHub will automatically redirect `www.dkfleed.meme` and `dkfleedmeme.github.io/dkfleed-meme/` to `https://dkfleed.meme/`.
-
-CLI alternative:
+CLI equivalents:
 
 ```bash
 gh api -X PUT repos/dkfleedmeme/dkfleed-meme/pages -f cname=dkfleed.meme
-```
-
-## 4. Enforce HTTPS
-
-When the DNS check passes and the certificate is issued (can take up to ~1 hour), tick **Enforce HTTPS** in the same Pages settings, or:
-
-```bash
 gh api -X PUT repos/dkfleedmeme/dkfleed-meme/pages -F https_enforced=true
 ```
-
-## 5. Update canonical / social URLs
-
-Canonical URL, Open Graph image, `robots.txt` and `sitemap.xml` use the placeholder `__SITE_URL__`, filled during deployment. Switch them to the custom domain by setting a repository variable:
-
-Repository → **Settings** → **Secrets and variables** → **Actions** → **Variables** → **New repository variable**
-
-| Name | Value |
-|---|---|
-| `SITE_URL` | `https://dkfleed.meme` |
-
-or:
-
-```bash
-gh variable set SITE_URL --repo dkfleedmeme/dkfleed-meme --body "https://dkfleed.meme"
-gh workflow run pages.yml --repo dkfleedmeme/dkfleed-meme
-```
-
-## 6. Final check
-
-- https://dkfleed.meme loads with a valid padlock.
-- https://www.dkfleed.meme redirects to https://dkfleed.meme.
-- https://dkfleed.meme/sitemap.xml lists `https://dkfleed.meme/`.
-- https://dkfleed.meme/does-not-exist shows the custom 404 page.
-
-## Rollback
-
-Remove the custom domain in **Settings → Pages** and delete the `SITE_URL` variable; the site returns to `https://dkfleedmeme.github.io/dkfleed-meme/` after the next deployment.

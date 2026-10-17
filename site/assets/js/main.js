@@ -4,9 +4,6 @@
 
   var doc = document.documentElement;
   var CONFIG = window.DKF_CONFIG || { links: {} };
-  var I18N = window.DKF_I18N || {};
-  var LANGS = ["en", "it"];
-  var STORAGE_KEY = "dkf-lang";
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   window.addEventListener("error", function () { doc.setAttribute("data-js-error", "1"); });
@@ -40,10 +37,10 @@
     return svg;
   }
 
-  function el(tag, cls, i18nKey) {
+  function el(tag, cls, text) {
     var node = document.createElement(tag);
     if (cls) node.className = cls;
-    if (i18nKey) node.setAttribute("data-i18n", i18nKey);
+    if (text) node.textContent = text;
     return node;
   }
 
@@ -55,7 +52,7 @@
       var url = safeUrl(CONFIG.links[s.key]);
       var li = el("li", "reveal");
       var card;
-      var state = el("span", "social-state", url ? "socials.open" : "socials.soon");
+      var state = el("span", "social-state", url ? "Open" : "Coming Soon");
       if (url) {
         card = el("a", "social-card social-card--" + s.key);
         card.href = url;
@@ -98,45 +95,9 @@
         node.disabled = true;
       }
       node.appendChild(svgIcon("i-pill"));
-      node.appendChild(el("span", "", url ? "socials.pumpOpen" : "socials.pumpSoon"));
+      node.appendChild(el("span", "", url ? "View on Pump.fun" : "Token Coming Soon"));
       slot.appendChild(node);
     });
-  }
-
-  /* ---------- i18n ---------- */
-  function detectLang() {
-    var fromUrl = new URLSearchParams(location.search).get("lang");
-    if (LANGS.indexOf(fromUrl) > -1) return fromUrl;
-    try {
-      var stored = localStorage.getItem(STORAGE_KEY);
-      if (LANGS.indexOf(stored) > -1) return stored;
-    } catch (e) { /* storage blocked */ }
-    var nav = (navigator.language || "en").slice(0, 2).toLowerCase();
-    return nav === "it" ? "it" : "en";
-  }
-
-  function applyLang(lang) {
-    var dict = I18N[lang] || I18N.en;
-    if (!dict) return;
-    doc.lang = lang;
-    document.querySelectorAll("[data-i18n]").forEach(function (node) {
-      var v = dict[node.getAttribute("data-i18n")];
-      if (typeof v === "string") node.textContent = v;
-    });
-    document.querySelectorAll("[data-i18n-attr]").forEach(function (node) {
-      node.getAttribute("data-i18n-attr").split(";").forEach(function (pair) {
-        var parts = pair.split(":");
-        var v = dict[parts[1]];
-        if (parts[0] && typeof v === "string") node.setAttribute(parts[0], v);
-      });
-    });
-    if (dict["meta.title"]) document.title = dict["meta.title"];
-    var desc = document.querySelector('meta[name="description"]');
-    if (desc && dict["meta.description"]) desc.setAttribute("content", dict["meta.description"]);
-    document.querySelectorAll(".lang-btn").forEach(function (b) {
-      b.setAttribute("aria-pressed", String(b.getAttribute("data-lang") === lang));
-    });
-    try { localStorage.setItem(STORAGE_KEY, lang); } catch (e) { /* ignore */ }
   }
 
   /* ---------- Navigation ---------- */
@@ -323,10 +284,6 @@
   function boot() {
     renderSocials();
     renderPump();
-    applyLang(detectLang());
-    document.querySelectorAll(".lang-btn").forEach(function (b) {
-      b.addEventListener("click", function () { applyLang(b.getAttribute("data-lang")); });
-    });
     var year = document.getElementById("year");
     if (year) year.textContent = String(new Date().getFullYear());
     initNav();
