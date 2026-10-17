@@ -1,0 +1,62 @@
+name: Deploy site to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Run site checks
+        run: node tools/check-site.mjs
+
+      - name: Build static site
+        env:
+          # Set the repository variable SITE_URL (e.g. https://dkfleed.meme) once the
+          # custom domain is live. Until then the GitHub Pages URL is used.
+          SITE_URL: ${{ vars.SITE_URL || 'https://dkfleedmeme.github.io/dkfleed-meme' }}
+        run: |
+          SITE_URL="${SITE_URL%/}"
+          rm -rf _site && mkdir _site
+          cp -R site/. _site/
+          grep -rl '__SITE_URL__' _site | xargs sed -i "s#__SITE_URL__#${SITE_URL}#g"
+          if grep -rq '__SITE_URL__' _site; then echo "Unreplaced placeholder" && exit 1; fi
+          echo "Built for ${SITE_URL}"
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

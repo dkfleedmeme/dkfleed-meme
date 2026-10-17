@@ -1,0 +1,12 @@
+# Visual reference only — not part of the published site
+website-reference.png
+
+# Local / OS files
+_site/
+node_modules/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+.env
+.env.*
