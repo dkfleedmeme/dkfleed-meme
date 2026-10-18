@@ -30,8 +30,19 @@ Any token address or Pump.fun link that is not published on the official website
 | GitHub | https://github.com/dkfleedmeme/dkfleed-meme |
 | TikTok | Coming Soon |
 | Pump.fun | https://pump.fun/coin/BWTztkzazFd4vKgZy3gFqHTvs9dbN31drXGkRHw3pump |
+| Whitepaper (PDF) | https://dkfleed.meme/whitepaper/DK_FLEED_Whitepaper_v1.0.pdf |
 
 Only the links listed here and on the website are official.
+
+## Whitepaper
+
+**D.K. FLEED Community & Token Transparency Whitepaper v1.0** (18 October 2026)
+
+- PDF: https://dkfleed.meme/whitepaper/DK_FLEED_Whitepaper_v1.0.pdf ([`site/whitepaper/`](site/whitepaper/DK_FLEED_Whitepaper_v1.0.pdf))
+- Markdown source: [`docs/whitepaper/DK_FLEED_Whitepaper_v1.0.md`](docs/whitepaper/DK_FLEED_Whitepaper_v1.0.md)
+- Website section: https://dkfleed.meme/#whitepaper
+
+Both files are published exactly as supplied; `tools/check-site.mjs` verifies their SHA-256 hashes. A new edition must be published as a new versioned file.
 
 ---
 
@@ -55,6 +66,7 @@ Only the links listed here and on the website are official.
 │   ├── robots.txt · sitemap.xml · site.webmanifest
 │   ├── favicon.ico · favicon-32.png · apple-touch-icon.png · icon-*.png
 │   ├── og-image.jpg           ← social preview 1200×630
+│   ├── whitepaper/DK_FLEED_Whitepaper_v1.0.pdf ← official whitepaper (PDF)
 │   └── assets/
 │       ├── css/styles.css
 │       ├── img/token-coin-*.webp
@@ -64,6 +76,7 @@ Only the links listed here and on the website are official.
 ├── tools/
 │   ├── check-site.mjs         ← automated checks (run locally and in CI)
 │   └── build-images.sh        ← regenerates all web images from token.png
+├── docs/whitepaper/DK_FLEED_Whitepaper_v1.0.md ← whitepaper Markdown source
 ├── token.png                  ← original official logo (master file, never modified)
 ├── .github/workflows/pages.yml
 ├── DNS-SETUP.md

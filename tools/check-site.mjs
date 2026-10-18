@@ -6,12 +6,21 @@ import { join, dirname, relative, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import vm from "node:vm";
+import { createHash } from "node:crypto";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = join(ROOT, "site");
 const OFFICIAL_GITHUB = "https://github.com/dkfleedmeme/dkfleed-meme";
 const SITE_URL = "https://dkfleed.meme";
 const MAX_ASSET_BYTES = 300 * 1024;
+const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024; // published PDF documents
+// Official whitepaper v1.0: published byte-for-byte as supplied by the project.
+const WHITEPAPER = {
+  pdf: "site/whitepaper/DK_FLEED_Whitepaper_v1.0.pdf",
+  pdfSha256: "de0f44cd1a2a646cd83e08482f83185b7cbf135e2364cfb3a0cca9bed930e519",
+  md: "docs/whitepaper/DK_FLEED_Whitepaper_v1.0.md",
+  mdSha256: "ea538acb7cecd640e6a9a67be9390db8e628d8df8f4da587c36199c884c64fe4"
+};
 
 let errors = 0;
 let checks = 0;
@@ -145,7 +154,7 @@ claim ? fail(`must not claim live trading or verified deployment (found "${claim
 /have not been independently verified/.test(index) ? ok("unverified-status notice present") : fail("index.html must state that onchain deployment and trading are not independently verified");
 if (!/not affiliated with, sponsored by or endorsed by any existing animation series, studio, publisher, creator/.test(index)) fail("independence disclaimer missing");
 else ok("independence disclaimer present");
-const NAV = ["Home", "Story", "Community", "Tokenomics", "Roadmap", "Safety", "Socials"];
+const NAV = ["Home", "Story", "Community", "Tokenomics", "Whitepaper", "Roadmap", "Safety", "Socials"];
 const navHtml = (index.match(/<nav class="nav"[\s\S]*?<\/nav>/) || [""])[0];
 NAV.every((t) => navHtml.includes(`>${t}</a>`)) ? ok("navigation labels in English") : fail("navigation labels must be: " + NAV.join(", "));
 
@@ -270,9 +279,32 @@ let total = 0;
 for (const f of siteFiles) {
   const size = statSync(f).size;
   total += size;
-  if (size > MAX_ASSET_BYTES) fail(`${relative(ROOT, f)} is ${(size / 1024).toFixed(0)} KB (> ${MAX_ASSET_BYTES / 1024} KB)`);
+  const limit = f.endsWith(".pdf") ? MAX_DOCUMENT_BYTES : MAX_ASSET_BYTES;
+  if (size > limit) fail(`${relative(ROOT, f)} is ${(size / 1024).toFixed(0)} KB (> ${limit / 1024} KB)`);
 }
 ok(`total site weight ${(total / 1024).toFixed(0)} KB across ${siteFiles.length} files`);
+
+// 8. Official whitepaper -----------------------------------------------------------
+console.log("Whitepaper");
+const sha256 = (p) => createHash("sha256").update(readFileSync(p)).digest("hex");
+const pdfPath = join(ROOT, WHITEPAPER.pdf), mdPath = join(ROOT, WHITEPAPER.md);
+if (!existsSync(pdfPath) || !existsSync(mdPath)) fail("whitepaper PDF or Markdown source missing");
+else {
+  readFileSync(pdfPath).subarray(0, 5).toString("latin1") === "%PDF-" ? ok("PDF has a valid %PDF header") : fail("whitepaper PDF header invalid");
+  sha256(pdfPath) === WHITEPAPER.pdfSha256 ? ok("PDF identical to the supplied file (SHA-256)") : fail("whitepaper PDF content changed (SHA-256 mismatch)");
+  sha256(mdPath) === WHITEPAPER.mdSha256 ? ok("Markdown source identical to the supplied file (SHA-256)") : fail("whitepaper Markdown content changed (SHA-256 mismatch)");
+}
+const pdfRel = WHITEPAPER.pdf.replace(/^site\//, "");
+const wpSection = (index.match(/<section[^>]*id="whitepaper"[\s\S]*?<\/section>/) || [""])[0];
+/<h2 id="whitepaper-title">Official Whitepaper<\/h2>/.test(wpSection) ? ok('"Official Whitepaper" section present') : fail('missing "Official Whitepaper" section');
+const readBtn = (wpSection.match(/<a\b[^>]*>(?:(?!<\/a>)[\s\S])*Read Whitepaper(?:(?!<\/a>)[\s\S])*<\/a>/) || [""])[0];
+readBtn.includes(`href="${pdfRel}"`) && /target="_blank"/.test(readBtn) && /rel="noopener[^"]*"/.test(readBtn) && /aria-label="[^"]*PDF[^"]*"/.test(readBtn)
+  ? ok('"Read Whitepaper" opens the PDF in a new tab with an accessible label') : fail('"Read Whitepaper" button must link to ' + pdfRel + " with target, rel and aria-label");
+new RegExp(`href="${pdfRel}" download="DK_FLEED_Whitepaper_v1\\.0\\.pdf"`).test(wpSection) ? ok("download button keeps the original file name") : fail("download button must keep the original file name");
+wpSection.includes(`${OFFICIAL_GITHUB}/blob/main/${WHITEPAPER.md}`) ? ok("Markdown source link points to the repository file") : fail("Markdown source link must point to " + WHITEPAPER.md);
+read(join(SITE, "sitemap.xml")).includes(`<loc>${SITE_URL}/${pdfRel}</loc>`) ? ok("sitemap lists the whitepaper PDF") : fail("sitemap must list the whitepaper PDF");
+read(join(ROOT, "README.md")).includes(`${SITE_URL}/${pdfRel}`) ? ok("README lists the whitepaper URL") : fail("README must list the whitepaper URL");
+/\.pdf\s+binary/.test(read(join(ROOT, ".gitattributes"))) ? ok(".gitattributes keeps PDFs binary") : fail(".gitattributes must mark *.pdf as binary");
 
 console.log(errors ? `\n${errors} problem(s) found.` : `\nAll ${checks} checks passed.`);
 process.exit(errors ? 1 : 0);
