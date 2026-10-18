@@ -149,11 +149,19 @@ vm.createContext(sandbox);
 vm.runInContext(read(join(SITE, "assets/js/config.js")), sandbox);
 const links = (sandbox.window.DKF_CONFIG || {}).links || {};
 links.github === OFFICIAL_GITHUB ? ok("GitHub link is the official repository") : fail("GitHub link must be " + OFFICIAL_GITHUB);
+// Verified official links. Every other social must stay "" (Coming Soon) until verified and added here.
+const OFFICIAL_LINKS = { instagram: "https://www.instagram.com/dkfleedmeme/" };
 for (const k of ["x", "telegram", "instagram", "tiktok", "pumpfun"]) {
+  const expected = OFFICIAL_LINKS[k] || "";
   if (!(k in links)) fail(`config.links.${k} missing`);
-  else if (links[k] && !/^https:\/\//.test(links[k])) fail(`config.links.${k} must be empty or https://`);
+  else if (links[k] !== expected) fail(`config.links.${k} must be ${expected ? '"' + expected + '"' : '"" (Coming Soon)'}, found "${links[k]}"`);
   else ok(`config.links.${k}: ${links[k] ? links[k] : "Coming Soon"}`);
 }
+const extraLinks = Object.keys(links).filter((k) => !["github", "x", "telegram", "instagram", "tiktok", "pumpfun"].includes(k));
+extraLinks.length ? fail("unexpected config links: " + extraLinks.join(", ")) : ok("no unexpected config links");
+/card\.target = "_blank";\s*card\.rel = "noopener noreferrer";/.test(mainJs)
+  ? ok('social links open in a new tab with rel="noopener noreferrer"')
+  : fail('social links must use target="_blank" and rel="noopener noreferrer"');
 
 // 6. Safety: no secrets, no wallet/blockchain code, no protected names -----------
 console.log("Safety");

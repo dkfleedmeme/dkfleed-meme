@@ -17,7 +17,7 @@ window.DKF_CONFIG = Object.freeze({
     github: "https://github.com/dkfleedmeme/dkfleed-meme",
     x: "",
     telegram: "",
-    instagram: "",
+    instagram: "https://www.instagram.com/dkfleedmeme/",
     tiktok: "",
     pumpfun: ""
   })
