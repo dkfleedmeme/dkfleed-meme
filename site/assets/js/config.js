@@ -9,7 +9,7 @@
  *    anywhere.
  *  - Only full https:// URLs are accepted. Anything else is ignored and
  *    treated as "Coming Soon".
- *  - pumpfun: keep it "" until the token is really live on Pump.fun.
+ *  - pumpfun: the official D.K. FLEED Pump.fun page only.
  *    Never paste an unverified or third-party link here.
  */
 window.DKF_CONFIG = Object.freeze({
@@ -19,6 +19,6 @@ window.DKF_CONFIG = Object.freeze({
     telegram: "https://t.me/dkfleedmeme",
     instagram: "https://www.instagram.com/dkfleedmeme/",
     tiktok: "",
-    pumpfun: ""
+    pumpfun: "https://pump.fun/coin/BWTztkzazFd4vKgZy3gFqHTvs9dbN31drXGkRHw3pump"
   })
 });

@@ -90,14 +90,53 @@
         node.href = url;
         node.target = "_blank";
         node.rel = "noopener noreferrer";
+        node.setAttribute("aria-label", "View D.K. FLEED on Pump.fun (opens in a new tab)");
       } else {
         node = el("button", "btn btn--gold");
         node.type = "button";
         node.disabled = true;
       }
       node.appendChild(svgIcon("i-pill"));
-      node.appendChild(el("span", "", url ? "View on Pump.fun" : "Token Coming Soon"));
+      node.appendChild(el("span", "", url ? "View on Pump.fun" : "Pump.fun Coming Soon"));
       slot.appendChild(node);
+    });
+  }
+
+  /* ---------- Copy token address (local clipboard only) ---------- */
+  function initCopy() {
+    document.querySelectorAll("[data-copy-target]").forEach(function (btn) {
+      var source = document.getElementById(btn.getAttribute("data-copy-target"));
+      var status = document.getElementById(btn.getAttribute("aria-describedby"));
+      if (!source || !status) return;
+      var label = btn.textContent;
+      var timer;
+      function report(ok) {
+        status.textContent = ok ? "Token address copied to clipboard." : "Copy failed. Select the address and copy it manually.";
+        btn.textContent = ok ? "Copied" : label;
+        clearTimeout(timer);
+        timer = setTimeout(function () { status.textContent = ""; btn.textContent = label; }, 4000);
+      }
+      function fallbackCopy(text) {
+        var area = document.createElement("textarea");
+        area.value = text;
+        area.setAttribute("readonly", "");
+        area.className = "copy-buffer";
+        document.body.appendChild(area);
+        area.select();
+        var ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+        document.body.removeChild(area);
+        return ok;
+      }
+      btn.addEventListener("click", function () {
+        var text = source.textContent.trim();
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(function () { report(true); }, function () { report(fallbackCopy(text)); });
+        } else {
+          report(fallbackCopy(text));
+        }
+      });
+      btn.hidden = false;
     });
   }
 
@@ -285,6 +324,7 @@
   function boot() {
     renderSocials();
     renderPump();
+    initCopy();
     var year = document.getElementById("year");
     if (year) year.textContent = String(new Date().getFullYear());
     initNav();

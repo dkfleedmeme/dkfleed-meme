@@ -10,13 +10,14 @@ Official static website of **D.K. FLEED**, an original, community-driven meme to
 | **Symbol** | $DKF |
 | **Network** | Solana |
 | **Planned supply** | 1,000,000,000 DKF |
-| **Planned launch** | Pump.fun fair launch |
+| **Launch platform** | Pump.fun fair launch |
 | **Presale** | None |
-| **Status** | Community Building · Token Coming Soon |
+| **Status** | Community Building · Pump.fun page created |
+| **Token address** | `BWTztkzazFd4vKgZy3gFqHTvs9dbN31drXGkRHw3pump` |
 | **Website** | https://dkfleed.meme |
 
-The token **has not been created yet**. There is no contract address, no price and no launch date.
-Any contract address that is not published on the official website is not ours.
+The official D.K. FLEED page was created on Pump.fun without an initial purchase. Onchain deployment and trading activity have **not been independently verified**, and no price, market data or performance figures are published here.
+Any token address or Pump.fun link that is not published on the official website is not ours.
 
 ## Official links
 
@@ -28,7 +29,7 @@ Any contract address that is not published on the official website is not ours.
 | Instagram | https://www.instagram.com/dkfleedmeme/ |
 | GitHub | https://github.com/dkfleedmeme/dkfleed-meme |
 | TikTok | Coming Soon |
-| Pump.fun | Token Coming Soon |
+| Pump.fun | https://pump.fun/coin/BWTztkzazFd4vKgZy3gFqHTvs9dbN31drXGkRHw3pump |
 
 Only the links listed here and on the website are official.
 
@@ -80,14 +81,14 @@ links: {
   telegram: "https://t.me/dkfleedmeme",
   instagram: "https://www.instagram.com/dkfleedmeme/",
   tiktok: "",     // Coming Soon
-  pumpfun: ""     // only when the token is really live
+  pumpfun: "https://pump.fun/coin/BWTztkzazFd4vKgZy3gFqHTvs9dbN31drXGkRHw3pump"
 }
 ```
 
 - An empty value shows **“Coming Soon”** and renders no link at all.
 - Only `https://` URLs are accepted. Configured links open in a new tab with `rel="noopener noreferrer"`.
 - The official URLs are also enforced by `tools/check-site.mjs`: update the `OFFICIAL_LINKS` list there when a new channel goes live.
-- When `pumpfun` is set, the disabled “Token Coming Soon” button becomes “View on Pump.fun”.
+- The `pumpfun` link drives every “View on Pump.fun” button. The token address itself is written in `site/index.html` (Tokenomics → Token address) and checked by `tools/check-site.mjs`.
 
 Commit and push to `main`: the site redeploys automatically.
 
@@ -97,7 +98,7 @@ All copy lives in [`site/index.html`](site/index.html). Content rules:
 
 - English only.
 - Keep the story original: never mention or imitate existing cartoon titles, robot names, characters, studios, franchises, logos, slogans, costumes, weapons or storylines.
-- Do not add contract addresses, prices, dates, allocations, liquidity, audits, partnerships or any promise of profit unless they are real and verified.
+- Do not add other token addresses, prices, market data, dates, allocations, liquidity, audits, partnerships, verified-status claims or any promise of profit unless they are real and verified.
 - Do not add personal information about the people behind the project.
 
 ## Local development

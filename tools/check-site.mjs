@@ -136,8 +136,13 @@ read(join(SITE, "sitemap.xml")).includes(`<loc>${SITE_URL}/</loc>`) ? ok("sitema
 read(join(SITE, "robots.txt")).includes(`Sitemap: ${SITE_URL}/sitemap.xml`) ? ok("robots.txt sitemap URL") : fail("robots.txt must reference " + SITE_URL + "/sitemap.xml");
 if (siteFiles.filter((p) => TEXT_EXT.has(extname(p))).some((p) => read(p).includes("__SITE_URL__"))) fail("leftover __SITE_URL__ placeholder");
 else ok("no URL placeholders left");
-if (!/Token Coming Soon/.test(index) || /\b(token is (now )?live|buy now|now live)\b/i.test(index)) fail('must show "Token Coming Soon" and must not claim the token is live');
-else ok('"Token Coming Soon" shown, no live-token claims');
+// Onchain deployment and trading are not independently verified: never claim otherwise.
+const LIVE_CLAIMS = /\b(token is (now )?live|now live|buy now|now trading|live trading|is tradable|tradable now|successfully deployed|verified (onchain|on-chain|contract)|contract address)\b/i;
+const publicText = [index, mainJs, read(join(SITE, "site.webmanifest")), read(join(ROOT, "README.md"))].join("\n");
+const claim = publicText.match(LIVE_CLAIMS);
+claim ? fail(`must not claim live trading or verified deployment (found "${claim[0]}")`) : ok("no live-trading or verified-deployment claims");
+/Token Coming Soon/i.test(index + mainJs) ? fail('outdated "Token Coming Soon" label still present') : ok('no outdated "Token Coming Soon" labels');
+/have not been independently verified/.test(index) ? ok("unverified-status notice present") : fail("index.html must state that onchain deployment and trading are not independently verified");
 if (!/not affiliated with, sponsored by or endorsed by any existing animation series, studio, publisher, creator/.test(index)) fail("independence disclaimer missing");
 else ok("independence disclaimer present");
 const NAV = ["Home", "Story", "Community", "Tokenomics", "Roadmap", "Safety", "Socials"];
@@ -153,8 +158,10 @@ links.github === OFFICIAL_GITHUB ? ok("GitHub link is the official repository") 
 const OFFICIAL_LINKS = {
   x: "https://x.com/dkfleedmeme",
   telegram: "https://t.me/dkfleedmeme",
-  instagram: "https://www.instagram.com/dkfleedmeme/"
+  instagram: "https://www.instagram.com/dkfleedmeme/",
+  pumpfun: "https://pump.fun/coin/BWTztkzazFd4vKgZy3gFqHTvs9dbN31drXGkRHw3pump"
 };
+const TOKEN_ADDRESS = "BWTztkzazFd4vKgZy3gFqHTvs9dbN31drXGkRHw3pump";
 for (const k of ["x", "telegram", "instagram", "tiktok", "pumpfun"]) {
   const expected = OFFICIAL_LINKS[k] || "";
   if (!(k in links)) fail(`config.links.${k} missing`);
@@ -175,6 +182,66 @@ webTelegram.length ? fail("web.telegram.org URL found in: " + webTelegram.map((p
 /Telegram[^\n]*https:\/\/t\.me\/dkfleedmeme/.test(read(join(ROOT, "README.md")))
   ? ok("README lists the official Telegram channel")
   : fail("README must list Telegram as https://t.me/dkfleedmeme");
+
+// Pump.fun page and token address
+console.log("Pump.fun & token address");
+/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(TOKEN_ADDRESS) && OFFICIAL_LINKS.pumpfun.endsWith("/coin/" + TOKEN_ADDRESS)
+  ? ok("Pump.fun URL matches the token address") : fail("Pump.fun URL and token address are inconsistent");
+const pumpAnchors = [...index.matchAll(/<a\b[^>]*href="https:\/\/pump\.fun[^"]*"[^>]*>/g)].map((m) => m[0]);
+const badPump = pumpAnchors.filter((a) => !a.includes(`href="${OFFICIAL_LINKS.pumpfun}"`) || !/target="_blank"/.test(a) || !/rel="noopener noreferrer"/.test(a) || !/aria-label="View D\.K\. FLEED on Pump\.fun \(opens in a new tab\)"/.test(a));
+pumpAnchors.length >= 3 && !badPump.length
+  ? ok(`${pumpAnchors.length} Pump.fun links: exact URL, new tab, rel="noopener noreferrer", accessible label`)
+  : fail(`Pump.fun links must use the exact URL with safe attributes (found ${pumpAnchors.length}, invalid ${badPump.length})`);
+const pumpTexts = [...index.matchAll(/href="https:\/\/pump\.fun[^"]*"[^>]*>([\s\S]*?)<\/a>/g)].map((m) => m[1].replace(/<[^>]+>/g, "").trim());
+pumpTexts.every((t) => t === "View on Pump.fun") ? ok('Pump.fun buttons labelled "View on Pump.fun"') : fail('Pump.fun buttons must be labelled "View on Pump.fun": ' + pumpTexts.join(" | "));
+if (/<button[^>]*disabled[^>]*>[\s\S]{0,200}?Pump/i.test(index)) fail("Pump.fun buttons must not be disabled"); else ok("Pump.fun buttons enabled");
+/node\.target = "_blank";\s*node\.rel = "noopener noreferrer";\s*node\.setAttribute\("aria-label", "View D\.K\. FLEED on Pump\.fun \(opens in a new tab\)"\);/.test(mainJs)
+  ? ok("JS-rendered Pump.fun buttons use safe attributes") : fail("JS-rendered Pump.fun buttons must use target, rel and aria-label");
+const pumpEverywhere = [...siteFiles.filter((p) => TEXT_EXT.has(extname(p))), join(ROOT, "README.md")]
+  .flatMap((p) => [...read(p).matchAll(/https:\/\/pump\.fun[^\s"'`)<|]*/g)].map((m) => m[0]))
+  .filter((u) => u !== OFFICIAL_LINKS.pumpfun);
+pumpEverywhere.length ? fail("non-official Pump.fun URLs: " + pumpEverywhere.join(", ")) : ok("every Pump.fun URL is the official one");
+const addressBlock = (index.match(/<div class="token-address[\s\S]*?<\/div>\s*<p class="copy-status"[\s\S]*?<\/div>/) || [""])[0];
+/<h3 id="token-address-title"[^>]*>Token address<\/h3>/.test(addressBlock) && /role="region" aria-labelledby="token-address-title"/.test(addressBlock)
+  ? ok('"Token address" section is labelled') : fail('missing labelled "Token address" section');
+addressBlock.includes(`<code class="token-address-value" id="token-address-value">${TOKEN_ADDRESS}</code>`)
+  ? ok("token address shown exactly: " + TOKEN_ADDRESS) : fail("token address must be shown exactly as " + TOKEN_ADDRESS);
+const otherAddresses = [...index.matchAll(/\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g)].map((m) => m[0]).filter((a) => a !== TOKEN_ADDRESS && /\d/.test(a) && /[A-Z]/.test(a) && /[a-z]/.test(a));
+otherAddresses.length ? fail("unexpected address-like strings: " + otherAddresses.join(", ")) : ok("no other token addresses");
+/<button type="button" class="btn btn--blue copy-btn" id="copy-token-address" data-copy-target="token-address-value" aria-describedby="copy-token-address-status" hidden>Copy address<\/button>/.test(addressBlock)
+  && /<p class="copy-status" id="copy-token-address-status" role="status" aria-live="polite"><\/p>/.test(addressBlock)
+  ? ok("copy button and live status region present") : fail("copy button must target the address and announce results in a role=status region");
+/navigator\.clipboard\.writeText\(text\)/.test(mainJs) && /document\.execCommand\("copy"\)/.test(mainJs) && /Token address copied to clipboard\./.test(mainJs) && /Copy failed\. Select the address and copy it manually\./.test(mainJs) && /btn\.hidden = false;/.test(mainJs) && /initCopy\(\);/.test(mainJs)
+  ? ok("copy logic: Clipboard API, fallback, English success/failure feedback") : fail("copy logic incomplete");
+// Exercise the copy handler with a minimal DOM stub (no browser required).
+{
+  const copied = [];
+  const make = (id, extra = {}) => ({ id, attrs: {}, listeners: {}, textContent: "", hidden: true, className: "",
+    getAttribute(n) { return this.attrs[n] ?? null; }, setAttribute(n, v) { this.attrs[n] = v; }, removeAttribute(n) { delete this.attrs[n]; },
+    addEventListener(t, f) { this.listeners[t] = f; }, appendChild() {}, select() {}, classList: { add() {}, remove() {}, toggle() {} }, ...extra });
+  const code = make("token-address-value", { textContent: ` ${TOKEN_ADDRESS} ` });
+  const status = make("copy-token-address-status");
+  const btn = make("copy-token-address", { textContent: "Copy address" });
+  btn.attrs = { "data-copy-target": "token-address-value", "aria-describedby": "copy-token-address-status" };
+  const byId = { [code.id]: code, [status.id]: status, [btn.id]: btn };
+  const docStub = { documentElement: make("html", { dataset: {} }), readyState: "complete", body: make("body"),
+    getElementById: (i) => byId[i] || null, querySelectorAll: (sel) => (sel === "[data-copy-target]" ? [btn] : []), querySelector: () => null,
+    createElement: () => make("x"), createElementNS: () => make("svg"), addEventListener() {}, execCommand: () => false };
+  const winStub = { DKF_CONFIG: { links: {} }, isSecureContext: true, addEventListener() {}, matchMedia: () => ({ matches: true }), scrollY: 0 };
+  const ctx = { window: winStub, document: docStub, navigator: { clipboard: { writeText: (t) => { copied.push(t); return Promise.resolve(); } } },
+    location: { search: "" }, setTimeout: () => 0, clearTimeout() {}, URL, requestAnimationFrame() {}, cancelAnimationFrame() {}, console };
+  vm.createContext(ctx);
+  try {
+    vm.runInContext(mainJs.replace(/initNav\(\);\s*initReveal\(\);\s*initStarfield\(\);/, ""), ctx);
+    btn.hidden === false ? ok("copy button revealed when JavaScript runs") : fail("copy button stays hidden");
+    btn.listeners.click && btn.listeners.click();
+    await new Promise((r) => setImmediate(r));
+    copied[0] === TOKEN_ADDRESS && status.textContent === "Token address copied to clipboard."
+      ? ok("copy click writes the exact address and announces success") : fail(`copy click wrote "${copied[0]}", status "${status.textContent}"`);
+  } catch (e) { fail("copy handler test crashed: " + e.message); }
+}
+/Token address[^\n]*BWTztkzazFd4vKgZy3gFqHTvs9dbN31drXGkRHw3pump/.test(read(join(ROOT, "README.md"))) && read(join(ROOT, "README.md")).includes("| Pump.fun | " + OFFICIAL_LINKS.pumpfun + " |")
+  ? ok("README lists the Pump.fun page and token address") : fail("README must list the Pump.fun page and token address");
 
 // 6. Safety: no secrets, no wallet/blockchain code, no protected names -----------
 console.log("Safety");
