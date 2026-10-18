@@ -150,7 +150,10 @@ vm.runInContext(read(join(SITE, "assets/js/config.js")), sandbox);
 const links = (sandbox.window.DKF_CONFIG || {}).links || {};
 links.github === OFFICIAL_GITHUB ? ok("GitHub link is the official repository") : fail("GitHub link must be " + OFFICIAL_GITHUB);
 // Verified official links. Every other social must stay "" (Coming Soon) until verified and added here.
-const OFFICIAL_LINKS = { instagram: "https://www.instagram.com/dkfleedmeme/" };
+const OFFICIAL_LINKS = {
+  x: "https://x.com/dkfleedmeme",
+  instagram: "https://www.instagram.com/dkfleedmeme/"
+};
 for (const k of ["x", "telegram", "instagram", "tiktok", "pumpfun"]) {
   const expected = OFFICIAL_LINKS[k] || "";
   if (!(k in links)) fail(`config.links.${k} missing`);
