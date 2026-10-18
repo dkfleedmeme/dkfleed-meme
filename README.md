@@ -18,6 +18,20 @@ Official static website of **D.K. FLEED**, an original, community-driven meme to
 The token **has not been created yet**. There is no contract address, no price and no launch date.
 Any contract address that is not published on the official website is not ours.
 
+## Official links
+
+| Channel | URL |
+|---|---|
+| Website | https://dkfleed.meme |
+| X | https://x.com/dkfleedmeme |
+| Telegram | https://t.me/dkfleedmeme |
+| Instagram | https://www.instagram.com/dkfleedmeme/ |
+| GitHub | https://github.com/dkfleedmeme/dkfleed-meme |
+| TikTok | Coming Soon |
+| Pump.fun | Token Coming Soon |
+
+Only the links listed here and on the website are official.
+
 ---
 
 ## Features
@@ -62,16 +76,17 @@ Edit **only** [`site/assets/js/config.js`](site/assets/js/config.js):
 ```js
 links: {
   github: "https://github.com/dkfleedmeme/dkfleed-meme",
-  x: "",          // e.g. "https://x.com/<official_handle>"
-  telegram: "",   // e.g. "https://t.me/<official_group>"
-  instagram: "",
-  tiktok: "",
+  x: "https://x.com/dkfleedmeme",
+  telegram: "https://t.me/dkfleedmeme",
+  instagram: "https://www.instagram.com/dkfleedmeme/",
+  tiktok: "",     // Coming Soon
   pumpfun: ""     // only when the token is really live
 }
 ```
 
 - An empty value shows **“Coming Soon”** and renders no link at all.
-- Only `https://` URLs are accepted.
+- Only `https://` URLs are accepted. Configured links open in a new tab with `rel="noopener noreferrer"`.
+- The official URLs are also enforced by `tools/check-site.mjs`: update the `OFFICIAL_LINKS` list there when a new channel goes live.
 - When `pumpfun` is set, the disabled “Token Coming Soon” button becomes “View on Pump.fun”.
 
 Commit and push to `main`: the site redeploys automatically.

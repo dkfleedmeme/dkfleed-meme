@@ -58,6 +58,7 @@
         card.href = url;
         card.target = "_blank";
         card.rel = "noopener noreferrer";
+        card.setAttribute("aria-label", "Official D.K. FLEED " + s.name + " (opens in a new tab)");
       } else {
         card = el("div", "social-card social-card--" + s.key + " is-soon");
         card.setAttribute("aria-disabled", "true");

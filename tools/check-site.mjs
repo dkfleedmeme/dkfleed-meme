@@ -152,6 +152,7 @@ links.github === OFFICIAL_GITHUB ? ok("GitHub link is the official repository") 
 // Verified official links. Every other social must stay "" (Coming Soon) until verified and added here.
 const OFFICIAL_LINKS = {
   x: "https://x.com/dkfleedmeme",
+  telegram: "https://t.me/dkfleedmeme",
   instagram: "https://www.instagram.com/dkfleedmeme/"
 };
 for (const k of ["x", "telegram", "instagram", "tiktok", "pumpfun"]) {
@@ -165,6 +166,15 @@ extraLinks.length ? fail("unexpected config links: " + extraLinks.join(", ")) : 
 /card\.target = "_blank";\s*card\.rel = "noopener noreferrer";/.test(mainJs)
   ? ok('social links open in a new tab with rel="noopener noreferrer"')
   : fail('social links must use target="_blank" and rel="noopener noreferrer"');
+/card\.setAttribute\("aria-label", "Official D\.K\. FLEED " \+ s\.name \+ " \(opens in a new tab\)"\)/.test(mainJs)
+  ? ok("enabled social links have an accessible English label")
+  : fail("enabled social links need an aria-label announcing the new tab");
+// Telegram must always use the public t.me channel URL, never the web client.
+const webTelegram = [...siteFiles.filter((p) => TEXT_EXT.has(extname(p))), join(ROOT, "README.md")].filter((p) => /web\.telegram\.org/i.test(read(p)));
+webTelegram.length ? fail("web.telegram.org URL found in: " + webTelegram.map((p) => relative(ROOT, p)).join(", ")) : ok("no web.telegram.org URLs");
+/Telegram[^\n]*https:\/\/t\.me\/dkfleedmeme/.test(read(join(ROOT, "README.md")))
+  ? ok("README lists the official Telegram channel")
+  : fail("README must list Telegram as https://t.me/dkfleedmeme");
 
 // 6. Safety: no secrets, no wallet/blockchain code, no protected names -----------
 console.log("Safety");
